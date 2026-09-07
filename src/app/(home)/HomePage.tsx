@@ -17,6 +17,9 @@ import { getFeaturedBlog } from '@/lib/content/repository';
 
 const processSteps = ['Verkennen', 'Verbinden', 'Formeren', 'Creeren', 'Verduurzamen'];
 
+// Zet op true zodra er echte testimonials en samenwerkingslogo's zijn.
+const showProofBlocks = false;
+
 const marqueeImages = [
     { src: '/images/Marquee/ibu1.webp', width: 1620, height: 1080 },
     { src: '/images/Marquee/ibu2.webp', width: 1604, height: 1080 },
@@ -159,40 +162,28 @@ return (
             <section id='aanbod' className='bg-[#FDF5E2] px-5 py-12 sm:px-8 sm:py-20 lg:px-10'>
                 <div className='mx-auto max-w-7xl'>
                     <p className='section-kicker'>Werk met mij</p>
-                    <div className='mt-3 grid gap-6 sm:mt-4 sm:gap-14 lg:grid-cols-[0.9fr_1.1fr] lg:items-start'>
-                        <h2 className='text-3xl font-extrabold leading-tight sm:text-6xl'>
-                            Vier expertisegebieden.
-                        </h2>
-                        <div className='space-y-4 text-base leading-7 lg:pt-2 sm:space-y-6 sm:text-xl sm:leading-8'>
-                            <p>
-                                Zoek je verdieping, een vernieuwende way of working of de volgende stap met je team?
-                                Maartje levert aanbod op maat en training in company.
-                            </p>
-                            <div className='flex flex-wrap gap-3'>
-                                {expectations.map((expectation) => {
-                                    const Icon = expectation.icon;
+                    <h2 className='mt-3 text-3xl font-extrabold leading-tight sm:mt-4 sm:text-6xl'>
+                        Vier expertisegebieden.
+                    </h2>
+                    <p className='mt-4 max-w-2xl text-base leading-7 sm:mt-5 sm:text-xl sm:leading-8'>
+                        Zoek je verdieping, een vernieuwende way of working of de volgende stap met je team?
+                        Maartje levert aanbod op maat en training in company.
+                    </p>
+                    <div className='mt-5 flex flex-wrap gap-3 sm:mt-6'>
+                        {expectations.map((expectation) => {
+                            const Icon = expectation.icon;
 
-                                    return (
-                                        <span key={expectation.text} className='icon-chip'>
-                                            <Icon aria-hidden className='h-4 w-4' />
-                                            {expectation.text}
-                                        </span>
-                                    );
-                                })}
-                            </div>
-                        </div>
+                            return (
+                                <span key={expectation.text} className='icon-chip'>
+                                    <Icon aria-hidden className='h-4 w-4' />
+                                    {expectation.text}
+                                </span>
+                            );
+                        })}
                     </div>
 
-                    <div className='mt-8 grid gap-6 sm:mt-12 sm:gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-stretch'>
+                    <div className='mt-8 sm:mt-12'>
                         <ExpertiseAreas />
-                        <Image
-                            src='/images/teammoment.webp'
-                            alt='Ibu Bos teammoment'
-                            width={2500}
-                            height={1667}
-                            sizes='(max-width: 1024px) 100vw, 42vw'
-                            className='editorial-image mobile-compact-image'
-                        />
                     </div>
                 </div>
             </section>
@@ -285,17 +276,19 @@ return (
                         </article>
                     </div>
 
-                    {/* Gereserveerde ruimte voor bewijs en geloofwaardigheid; inhoud volgt later. */}
-                    <div className='mt-8 grid gap-4 sm:mt-10 sm:grid-cols-2'>
-                        <div className='speaking-proof'>
-                            <span>Ervaringen</span>
-                            <p>Ruimte voor een korte testimonial van een opdrachtgever of deelnemer.</p>
+                    {/* Gereserveerde ruimte voor bewijs en geloofwaardigheid; verborgen tot de inhoud er is. */}
+                    {showProofBlocks ? (
+                        <div className='mt-8 grid gap-4 sm:mt-10 sm:grid-cols-2'>
+                            <div className='speaking-proof'>
+                                <span>Ervaringen</span>
+                                <p>Ruimte voor een korte testimonial van een opdrachtgever of deelnemer.</p>
+                            </div>
+                            <div className='speaking-proof'>
+                                <span>Samenwerkingen</span>
+                                <p>Ruimte voor namen of logo&apos;s van organisaties waarmee Maartje werkte.</p>
+                            </div>
                         </div>
-                        <div className='speaking-proof'>
-                            <span>Samenwerkingen</span>
-                            <p>Ruimte voor namen of logo&apos;s van organisaties waarmee Maartje werkte.</p>
-                        </div>
-                    </div>
+                    ) : null}
                 </div>
             </section>
 
@@ -394,6 +387,17 @@ return (
                         <ArrowUpRight aria-hidden />
                     </Link>
                 </div>
+            </section>
+
+            <section aria-label='Ecologie in beeld' className='full-bleed-media'>
+                <Image
+                    src='/images/ecology2.webp'
+                    alt=''
+                    width={2654}
+                    height={1517}
+                    sizes='100vw'
+                    className='full-bleed-media__image'
+                />
             </section>
 
             <section id='contact' className='contact-section bg-[#FDF5E2] px-5 py-12 text-[#15583B] sm:px-8 sm:py-16 lg:px-10'>
