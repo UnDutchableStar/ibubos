@@ -162,14 +162,7 @@ return (
             <section id='aanbod' className='bg-[#FDF5E2] px-5 py-12 sm:px-8 sm:py-20 lg:px-10'>
                 <div className='mx-auto max-w-7xl'>
                     <p className='section-kicker'>Werk met mij</p>
-                    <h2 className='mt-3 text-3xl font-extrabold leading-tight sm:mt-4 sm:text-6xl'>
-                        Vier expertisegebieden.
-                    </h2>
-                    <p className='mt-4 max-w-2xl text-base leading-7 sm:mt-5 sm:text-xl sm:leading-8'>
-                        Zoek je verdieping, een vernieuwende way of working of de volgende stap met je team?
-                        Maartje levert aanbod op maat en training in company.
-                    </p>
-                    <div className='mt-5 flex flex-wrap gap-3 sm:mt-6'>
+                    <div className='mt-4 flex flex-wrap gap-3'>
                         {expectations.map((expectation) => {
                             const Icon = expectation.icon;
 
@@ -181,6 +174,13 @@ return (
                             );
                         })}
                     </div>
+                    <h2 className='mt-5 text-3xl font-extrabold leading-tight sm:mt-6 sm:text-6xl'>
+                        Vier expertisegebieden.
+                    </h2>
+                    <p className='mt-4 max-w-2xl text-base leading-7 sm:mt-5 sm:text-xl sm:leading-8'>
+                        Zoek je verdieping, een vernieuwende way of working of de volgende stap met je team?
+                        Maartje levert aanbod op maat en training in company.
+                    </p>
 
                     <div className='mt-8 sm:mt-12'>
                         <ExpertiseAreas />
