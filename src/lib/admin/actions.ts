@@ -7,6 +7,7 @@ import { del } from '@vercel/blob';
 
 import { requireAdmin } from './auth';
 import { isBlobImageUrl } from './upload';
+import { auth } from '../auth/server';
 import {
     countImageReferences,
     createContent,
@@ -101,4 +102,38 @@ export const deleteContentAction = async (type: ContentType, id: string, formDat
     await removeOrphanedImage(removed?.image, id);
     refreshType(type);
     redirect(`/admin/${type === 'blog' ? 'blogs' : 'projecten'}`);
+};
+
+export type ChangePasswordState = {
+    error?: string;
+    success?: boolean;
+};
+
+export const changePasswordAction = async (
+    _previousState: ChangePasswordState | undefined,
+    formData: FormData
+): Promise<ChangePasswordState> => {
+    await requireAdmin();
+
+    const currentPassword = String(formData.get('currentPassword') ?? '');
+    const newPassword = String(formData.get('newPassword') ?? '');
+    const confirmPassword = String(formData.get('confirmPassword') ?? '');
+
+    if (newPassword !== confirmPassword) {
+        return { error: 'Het nieuwe wachtwoord komt niet overeen met de bevestiging.' };
+    }
+    if (newPassword.length < 8) {
+        return { error: 'Het nieuwe wachtwoord moet minimaal 8 tekens bevatten.' };
+    }
+
+    try {
+        const result = await auth.changePassword({ currentPassword, newPassword });
+        if (result.error) {
+            return { error: 'Het huidige wachtwoord is onjuist of het wijzigen is mislukt.' };
+        }
+
+        return { success: true };
+    } catch {
+        return { error: 'Er is iets misgegaan. Probeer het opnieuw.' };
+    }
 };

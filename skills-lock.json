@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "neon-auth-nextjs": {
+      "source": "neondatabase/neon-js",
+      "sourceType": "github",
+      "skillPath": "skills/neon-auth-nextjs/SKILL.md",
+      "computedHash": "5dd77ed0a9895ce89aac64247244b886e994395539df6550eef9945cdb773b1b"
+    }
+  }
+}

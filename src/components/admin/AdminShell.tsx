@@ -5,7 +5,15 @@ import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-import { logoutAction } from '@/app/admin/(protected)/logout/actions';
+import UserMenu from './UserMenu';
+
+type AdminShellProps = {
+    children: ReactNode;
+    user: {
+        name?: string | null;
+        email: string;
+    };
+};
 
 const navItems = [
     { href: '/admin', label: 'Dashboard' },
@@ -13,7 +21,7 @@ const navItems = [
     { href: '/admin/projecten', label: 'Projecten' }
 ];
 
-const AdminShell = ({ children }: { children: ReactNode }) => {
+const AdminShell = ({ children, user }: AdminShellProps) => {
     const pathname = usePathname();
 
     return (
@@ -32,12 +40,7 @@ const AdminShell = ({ children }: { children: ReactNode }) => {
                             </Link>
                         );
                     })}
-                    <Link href='/' target='_blank'>
-                        Bekijk website
-                    </Link>
-                    <form action={logoutAction}>
-                        <button type='submit'>Uitloggen</button>
-                    </form>
+                    <UserMenu user={user} />
                 </nav>
             </header>
             <div className='admin-content'>{children}</div>

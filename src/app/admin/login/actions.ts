@@ -2,14 +2,20 @@
 
 import { redirect } from 'next/navigation';
 
-import { authenticateAdmin, createAdminSession } from '@/lib/admin/auth';
+import { auth } from '@/lib/auth/server';
 
 export const loginAction = async (formData: FormData) => {
-    const username = String(formData.get('username') ?? '');
+    const email = String(formData.get('email') ?? '');
     const password = String(formData.get('password') ?? '');
 
-    if (!authenticateAdmin(username, password)) redirect('/admin/login?error=1');
-    await createAdminSession();
+    const { data, error } = await auth.signIn.email({ email, password });
+    if (error || !data) redirect('/admin/login?error=1');
+
+    if (data.user?.role !== 'admin') {
+        await auth.signOut();
+        redirect('/admin/login?error=1');
+    }
+
     redirect('/admin');
 };
 

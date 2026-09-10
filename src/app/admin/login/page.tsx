@@ -1,15 +1,17 @@
 import { redirect } from 'next/navigation';
 
-import { hasAdminSession, isAdminConfigured } from '@/lib/admin/auth';
+import { hasAdminSession, isAuthConfigured } from '@/lib/admin/auth';
 
 import { loginAction } from './actions';
+
+export const dynamic = 'force-dynamic';
 
 type LoginPageProps = { searchParams: Promise<{ error?: string }> };
 
 const LoginPage = async ({ searchParams }: LoginPageProps) => {
     if (await hasAdminSession()) redirect('/admin');
     const { error } = await searchParams;
-    const configured = isAdminConfigured();
+    const configured = isAuthConfigured();
 
     return (
         <main className='admin-page admin-login font-brand'>
@@ -19,14 +21,14 @@ const LoginPage = async ({ searchParams }: LoginPageProps) => {
                 <p>Beheer hier samen de blogs en projecten van Ibu Bos.</p>
                 {!configured ? (
                     <div className='admin-notice'>
-                        Voeg eerst <code>AUTH_SECRET</code>, <code>ADMIN_USERNAME</code> en{' '}
-                        <code>ADMIN_PASSWORD_HASH</code> toe aan de environment-variabelen.
+                        Voeg eerst <code>NEON_AUTH_BASE_URL</code> en <code>NEON_AUTH_COOKIE_SECRET</code> toe aan
+                        de environment-variabelen.
                     </div>
                 ) : (
                     <form action={loginAction} className='admin-form'>
                         <label>
-                            Gebruikersnaam
-                            <input name='username' autoComplete='username' required />
+                            E-mailadres
+                            <input name='email' type='email' autoComplete='email' required />
                         </label>
                         <label>
                             Wachtwoord
