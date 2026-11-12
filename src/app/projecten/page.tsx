@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { ArrowUpRight } from 'lucide-react';
 import type { Metadata } from 'next';
 
+import ContentImage from '@/components/content/ContentImage';
 import ProjectCard from '@/components/content/ProjectCard';
 import { getPaginatedItems } from '@/lib/content';
 import { getFeaturedProject, listPublishedProjects } from '@/lib/content/repository';
@@ -45,7 +46,7 @@ return (
             <section className='archive-hero archive-hero--projects bg-[#FDF5E2] px-5 py-12 sm:px-8 sm:py-16 lg:px-10'>
                 <div className='archive-hero__grid archive-hero__grid--reverse mx-auto max-w-7xl'>
                     <Link href={`/projecten/${featuredProject.slug}`} className='archive-feature'>
-                        <Image
+                        <ContentImage
                             src={featuredProject.image}
                             alt={featuredProject.title}
                             width={2500}

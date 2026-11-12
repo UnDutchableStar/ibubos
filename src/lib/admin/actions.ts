@@ -61,21 +61,46 @@ const refreshType = (type: ContentType) => {
     revalidatePath(type === 'blog' ? '/blogs' : '/projecten', 'layout');
 };
 
+const editorUrl = (type: ContentType, id: string | null) =>
+    `/admin/${type === 'blog' ? 'blogs' : 'projecten'}/${id ?? 'new'}`;
+
 export const saveContentAction = async (type: ContentType, id: string | null, formData: FormData) => {
     await requireAdmin();
-    const existing = id ? await getAdminContent(id) : undefined;
+    const editor = editorUrl(type, id);
+
+    let existing;
+    try {
+        existing = id ? await getAdminContent(id) : undefined;
+    } catch (error) {
+        console.error('Content ophalen mislukt:', error);
+        redirect(`${editor}?error=db`);
+    }
+
     let draft;
     try {
         draft = normalizeContentInput(type, parseForm(type, formData), existing);
     } catch {
-        redirect(`/admin/${type === 'blog' ? 'blogs' : 'projecten'}/${id ?? 'new'}?error=validation`);
-    }
-    if (await findContentBySlug(type, draft.slug, id ?? undefined)) {
-        redirect(`/admin/${type === 'blog' ? 'blogs' : 'projecten'}/${id ?? 'new'}?error=slug`);
+        redirect(`${editor}?error=validation`);
     }
 
-    const item = id ? await updateContent(id, draft) : await createContent(draft);
-    if (!item) throw new Error('De content kon niet worden opgeslagen.');
+    let slugTaken;
+    try {
+        slugTaken = Boolean(await findContentBySlug(type, draft.slug, id ?? undefined));
+    } catch (error) {
+        console.error('Slugcontrole mislukt:', error);
+        redirect(`${editor}?error=db`);
+    }
+    if (slugTaken) redirect(`${editor}?error=slug`);
+
+    let item;
+    try {
+        item = id ? await updateContent(id, draft) : await createContent(draft);
+    } catch (error) {
+        console.error('Content opslaan mislukt:', error);
+        redirect(`${editor}?error=db`);
+    }
+    if (!item) redirect(`${editor}?error=db`);
+
     if (id && existing && existing.image !== item.image) await removeOrphanedImage(existing.image, id);
     refreshType(type);
     redirect(`/admin/${type === 'blog' ? 'blogs' : 'projecten'}/${item.id}?saved=1`);
@@ -83,22 +108,38 @@ export const saveContentAction = async (type: ContentType, id: string | null, fo
 
 export const publishContentAction = async (type: ContentType, id: string) => {
     await requireAdmin();
-    await setContentStatus(id, 'published');
+    try {
+        await setContentStatus(id, 'published');
+    } catch (error) {
+        console.error('Publiceren mislukt:', error);
+        redirect(`${editorUrl(type, id)}?error=db`);
+    }
     refreshType(type);
-    redirect(`/admin/${type === 'blog' ? 'blogs' : 'projecten'}/${id}?published=1`);
+    redirect(`${editorUrl(type, id)}?published=1`);
 };
 
 export const unpublishContentAction = async (type: ContentType, id: string) => {
     await requireAdmin();
-    await setContentStatus(id, 'draft');
+    try {
+        await setContentStatus(id, 'draft');
+    } catch (error) {
+        console.error('Offline halen mislukt:', error);
+        redirect(`${editorUrl(type, id)}?error=db`);
+    }
     refreshType(type);
-    redirect(`/admin/${type === 'blog' ? 'blogs' : 'projecten'}/${id}?saved=1`);
+    redirect(`${editorUrl(type, id)}?saved=1`);
 };
 
 export const deleteContentAction = async (type: ContentType, id: string, formData: FormData) => {
     await requireAdmin();
     if (formData.get('confirm') !== 'yes') return;
-    const removed = await deleteContent(id);
+    let removed;
+    try {
+        removed = await deleteContent(id);
+    } catch (error) {
+        console.error('Verwijderen mislukt:', error);
+        redirect(`${editorUrl(type, id)}?error=db`);
+    }
     await removeOrphanedImage(removed?.image, id);
     refreshType(type);
     redirect(`/admin/${type === 'blog' ? 'blogs' : 'projecten'}`);

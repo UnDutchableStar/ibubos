@@ -1,6 +1,6 @@
-import Image from 'next/image';
 import Link from 'next/link';
 
+import ContentImage from '@/components/content/ContentImage';
 import type { ContentRecord, ContentType } from '@/lib/content/types';
 
 const ContentTable = ({ items, type }: { items: ContentRecord[]; type: ContentType }) => {
@@ -23,7 +23,7 @@ const ContentTable = ({ items, type }: { items: ContentRecord[]; type: ContentTy
                         <tr key={item.id}>
                             <td>
                                 <div className='admin-table__content'>
-                                    <Image
+                                    <ContentImage
                                         src={item.image}
                                         alt=''
                                         width={88}

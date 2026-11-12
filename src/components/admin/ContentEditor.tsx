@@ -52,6 +52,7 @@ const ContentEditor = ({ type, item, saved, published, error }: EditorProps) => 
             {published ? <p className='admin-success'>De content staat nu live.</p> : null}
             {error === 'slug' ? <p className='admin-error'>Deze URL wordt al gebruikt. Kies een andere titel.</p> : null}
             {error === 'validation' ? <p className='admin-error'>Controleer de verplichte velden en de lengte van de teksten.</p> : null}
+            {error === 'db' ? <p className='admin-error'>Opslaan is mislukt door een fout in de database. Probeer het opnieuw.</p> : null}
             <form action={saveAction} className='admin-form admin-editor'>
                 <div className='admin-form-grid'>
                     <label>
@@ -77,7 +78,10 @@ const ContentEditor = ({ type, item, saved, published, error }: EditorProps) => 
                     <textarea name='summary' defaultValue={item?.description ?? item?.intro} required minLength={10} maxLength={300} />
                     <small className='admin-hint'>1 à 2 zinnen voor de archiefkaarten en de intro. Max. 300 tekens.</small>
                 </label>
-                <AdminImageField defaultValue={item?.image ?? ''} />
+                <AdminImageField
+                    defaultValue={item?.image ?? ''}
+                    useBlobStorage={Boolean(process.env.BLOB_READ_WRITE_TOKEN)}
+                />
                 {isBlog ? (
                     <label>
                         Kern

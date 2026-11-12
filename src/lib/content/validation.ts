@@ -31,13 +31,13 @@ const sectionSchema = z.object({
     body: z.string().trim().min(10).max(5000)
 });
 
-const tagSchema = z.string().trim().min(2).max(30);
+const tagSchema = z.string().trim().min(2).max(40);
 
 const commonSchema = z.object({
     title: z.string().trim().min(2).max(120),
     slug: z.string().trim().max(100).optional(),
     description: z.string().trim().min(10).max(300),
-    image: imageSchema,
+    image: imageSchema.or(z.literal('')).default(''),
     label: z.string().trim().min(2).max(40),
     intro: z.string().trim().min(10).max(1200),
     sections: z.array(sectionSchema).min(1).max(4),

@@ -77,15 +77,16 @@ const toProject = (record: ContentRecord): Project => ({
 });
 
 const listPublishedRecords = async (type: ContentType): Promise<ContentRecord[]> => {
-    const db = getDb();
-    if (!db) return type === 'blog' ? seedBlogs() : seedProjects();
+    if (!getDb()) return type === 'blog' ? seedBlogs() : seedProjects();
 
     try {
-        const rows = await db
-            .select()
-            .from(contentEntries)
-            .where(and(eq(contentEntries.type, type), eq(contentEntries.status, 'published')))
-            .orderBy(desc(contentEntries.publishedAt), asc(contentEntries.slug));
+        const rows = await withPlannedAtRetry((db) =>
+            db
+                .select()
+                .from(contentEntries)
+                .where(and(eq(contentEntries.type, type), eq(contentEntries.status, 'published')))
+                .orderBy(desc(contentEntries.publishedAt), asc(contentEntries.slug))
+        );
 
         return rows.map(toRecord);
     } catch {
@@ -141,21 +142,53 @@ const requireDb = () => {
 return db;
 };
 
-export const listAdminContent = async (type?: ContentType) => {
+type Db = NonNullable<ReturnType<typeof getDb>>;
+
+// Postgres 42703 = undefined_column. Oudere databases missen planned_at;
+// maak de kolom dan alsnog aan (zie drizzle/0001_planned_at.sql) en probeer opnieuw.
+const isMissingPlannedAtColumn = (error: unknown): boolean => {
+    const inspect = (candidate: unknown): boolean => {
+        if (!candidate || typeof candidate !== 'object') return false;
+        const { code, message } = candidate as { code?: string; message?: string };
+
+        return code === '42703' && Boolean(message?.includes('planned_at'));
+    };
+
+    return inspect(error) || inspect((error as { cause?: unknown }).cause);
+};
+
+const withPlannedAtRetry = async <T>(run: (db: Db) => Promise<T>): Promise<T> => {
     const db = requireDb();
-    const rows = type
-        ? await db
-              .select()
-              .from(contentEntries)
-              .where(eq(contentEntries.type, type))
-              .orderBy(desc(contentEntries.updatedAt))
-        : await db.select().from(contentEntries).orderBy(desc(contentEntries.updatedAt));
+    try {
+        return await run(db);
+    } catch (error) {
+        if (!isMissingPlannedAtColumn(error)) throw error;
+        await db.execute(
+            sql`ALTER TABLE content_entries ADD COLUMN IF NOT EXISTS planned_at timestamp with time zone`
+        );
+
+        return run(db);
+    }
+};
+
+export const listAdminContent = async (type?: ContentType) => {
+    const rows = await withPlannedAtRetry((db) =>
+        type
+            ? db
+                  .select()
+                  .from(contentEntries)
+                  .where(eq(contentEntries.type, type))
+                  .orderBy(desc(contentEntries.updatedAt))
+            : db.select().from(contentEntries).orderBy(desc(contentEntries.updatedAt))
+    );
 
 return rows.map(toRecord);
 };
 
 export const getAdminContent = async (id: string) => {
-    const [entry] = await requireDb().select().from(contentEntries).where(eq(contentEntries.id, id)).limit(1);
+    const [entry] = await withPlannedAtRetry((db) =>
+        db.select().from(contentEntries).where(eq(contentEntries.id, id)).limit(1)
+    );
 
 return entry ? toRecord(entry) : undefined;
 };
@@ -175,17 +208,19 @@ return entry;
 
 export const createContent = async (draft: ContentDraft) => {
     const values: NewContentEntry = { ...draft, publishedAt: null };
-    const [entry] = await requireDb().insert(contentEntries).values(values).returning();
+    const [entry] = await withPlannedAtRetry((db) => db.insert(contentEntries).values(values).returning());
 
 return toRecord(entry);
 };
 
 export const updateContent = async (id: string, draft: ContentDraft) => {
-    const [entry] = await requireDb()
-        .update(contentEntries)
-        .set({ ...draft, updatedAt: new Date() })
-        .where(eq(contentEntries.id, id))
-        .returning();
+    const [entry] = await withPlannedAtRetry((db) =>
+        db
+            .update(contentEntries)
+            .set({ ...draft, updatedAt: new Date() })
+            .where(eq(contentEntries.id, id))
+            .returning()
+    );
 
 return entry ? toRecord(entry) : undefined;
 };
@@ -193,42 +228,48 @@ return entry ? toRecord(entry) : undefined;
 export const setContentStatus = async (id: string, status: ContentStatus) => {
     const current = await getAdminContent(id);
     if (!current) return undefined;
-    const [entry] = await requireDb()
-        .update(contentEntries)
-        .set({
-            status,
-            publishedAt: status === 'published' ? current.publishedAt ?? new Date() : current.publishedAt,
-            updatedAt: new Date()
-        })
-        .where(eq(contentEntries.id, id))
-        .returning();
+    const [entry] = await withPlannedAtRetry((db) =>
+        db
+            .update(contentEntries)
+            .set({
+                status,
+                publishedAt: status === 'published' ? current.publishedAt ?? new Date() : current.publishedAt,
+                updatedAt: new Date()
+            })
+            .where(eq(contentEntries.id, id))
+            .returning()
+    );
 
 return entry ? toRecord(entry) : undefined;
 };
 
 export const deleteContent = async (id: string) => {
-    const [entry] = await requireDb().delete(contentEntries).where(eq(contentEntries.id, id)).returning();
+    const [entry] = await withPlannedAtRetry((db) =>
+        db.delete(contentEntries).where(eq(contentEntries.id, id)).returning()
+    );
 
 return entry ? toRecord(entry) : undefined;
 };
 
 export const publishDueContent = async (dueBefore: Date) => {
-    const rows = await requireDb()
-        .update(contentEntries)
-        .set({
-            status: 'published',
-            // De geplande dag wordt de publicatiedatum, zodat de volgorde klopt.
-            publishedAt: sql`coalesce(${contentEntries.plannedAt}, now())`,
-            updatedAt: new Date()
-        })
-        .where(
-            and(
-                eq(contentEntries.status, 'draft'),
-                isNotNull(contentEntries.plannedAt),
-                lte(contentEntries.plannedAt, dueBefore)
+    const rows = await withPlannedAtRetry((db) =>
+        db
+            .update(contentEntries)
+            .set({
+                status: 'published',
+                // De geplande dag wordt de publicatiedatum, zodat de volgorde klopt.
+                publishedAt: sql`coalesce(${contentEntries.plannedAt}, now())`,
+                updatedAt: new Date()
+            })
+            .where(
+                and(
+                    eq(contentEntries.status, 'draft'),
+                    isNotNull(contentEntries.plannedAt),
+                    lte(contentEntries.plannedAt, dueBefore)
+                )
             )
-        )
-        .returning();
+            .returning()
+    );
 
     return rows.map(toRecord);
 };

@@ -4,6 +4,7 @@ import { ArrowUpRight } from 'lucide-react';
 import type { Metadata } from 'next';
 
 import BlogCard from '@/components/content/BlogCard';
+import ContentImage from '@/components/content/ContentImage';
 import { getPaginatedItems } from '@/lib/content';
 import { getFeaturedBlog, listPublishedBlogs } from '@/lib/content/repository';
 
@@ -58,7 +59,7 @@ const BlogsPage = async ({ searchParams }: BlogsPageProps) => {
                         </Link>
                     </div>
                     <Link href={`/blogs/${featuredBlog.slug}`} className='archive-feature'>
-                        <Image
+                        <ContentImage
                             src={featuredBlog.image}
                             alt={featuredBlog.title}
                             width={2500}

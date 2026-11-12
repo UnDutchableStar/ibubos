@@ -13,9 +13,10 @@ test('documents every backend environment variable', () => {
     for (const key of [
         'DATABASE_URL',
         'BLOB_READ_WRITE_TOKEN',
-        'AUTH_SECRET',
-        'ADMIN_USERNAME',
-        'ADMIN_PASSWORD_HASH'
+        'CRON_SECRET',
+        'NEON_AUTH_BASE_URL',
+        'NEXT_PUBLIC_NEON_AUTH_URL',
+        'NEON_AUTH_COOKIE_SECRET'
     ]) {
         assert.match(envExample, new RegExp(`^${key}=`, 'm'));
     }
@@ -73,6 +74,14 @@ test('ships an explicit SQL migration matching the schema constraints', () => {
     assert.match(migration, /['"]?sections['"]?\s+jsonb/i);
     assert.match(migration, /['"]?tags['"]?\s+text\[\]/i);
     assert.match(migration, /['"]?facts['"]?\s+text\[\]/i);
+});
+
+test('ships an idempotent planned_at migration for older databases', () => {
+    const migration = readRequiredFile('drizzle/0001_planned_at.sql');
+
+    assert.match(migration, /ALTER TABLE ['"]?content_entries['"]?/i);
+    assert.match(migration, /ADD COLUMN IF NOT EXISTS ['"]?planned_at['"]?/i);
+    assert.match(migration, /timestamp with time zone/i);
 });
 
 test('exposes a lazy nullable database client contract', () => {
