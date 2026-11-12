@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 
+import ContentImage from '@/components/content/ContentImage';
 import { RelatedProjects } from '@/components/content/RelatedContent';
 import { getPublishedProject, getRelatedPublishedProjects } from '@/lib/content/repository';
 
@@ -25,7 +26,7 @@ export const generateMetadata = async ({ params }: ProjectDetailPageProps): Prom
             type: 'article',
             title: project.title,
             description: project.description,
-            images: [project.image]
+            images: project.image ? [project.image] : undefined
         }
     };
 };
@@ -49,7 +50,7 @@ const ProjectDetailPage = async ({ params }: ProjectDetailPageProps) => {
                         <h1 className='mt-4 text-4xl font-extrabold leading-tight sm:text-7xl'>{project.title}</h1>
                         <p className='mt-5 max-w-2xl text-base leading-7 sm:text-xl sm:leading-8'>{project.intro}</p>
                     </div>
-                    <Image
+                    <ContentImage
                         src={project.image}
                         alt={project.title}
                         width={2500}

@@ -1,4 +1,11 @@
 import ContentEditor from '@/components/admin/ContentEditor';
-const NewProjectPage = () => <ContentEditor type='project' />;
-export default NewProjectPage;
 
+type Props = { searchParams: Promise<{ error?: string }> };
+
+const NewProjectPage = async ({ searchParams }: Props) => {
+    const { error } = await searchParams;
+
+    return <ContentEditor type='project' error={error} />;
+};
+
+export default NewProjectPage;

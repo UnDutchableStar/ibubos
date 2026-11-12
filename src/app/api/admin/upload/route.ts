@@ -1,31 +1,67 @@
-import { randomUUID } from 'node:crypto';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import { put } from '@vercel/blob';
+import { handleUpload, type HandleUploadBody } from '@vercel/blob/client';
 import { NextResponse } from 'next/server';
 
 import { hasAdminSession } from '@/lib/admin/auth';
-import { getUploadError } from '@/lib/admin/upload';
+import {
+    getUploadError,
+    MAX_IMAGE_UPLOAD_BYTES,
+    safeUploadName,
+    supportedImageTypes,
+    uploadErrorMessages
+} from '@/lib/admin/upload';
 
 export const runtime = 'nodejs';
 
-const extensions: Record<string, string> = {
-    'image/jpeg': 'jpg',
-    'image/png': 'png',
-    'image/webp': 'webp'
+// Client-uploads naar Vercel Blob vragen hier om een token en sturen daarna
+// het bestand rechtstreeks naar de opslag, voorbij de body-limiet van Vercel.
+const handleClientToken = async (request: Request) => {
+    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+        return NextResponse.json(
+            { error: 'Uploads zijn nog niet ingesteld. Koppel een Vercel Blob-store.' },
+            { status: 503 }
+        );
+    }
+
+    let body: HandleUploadBody;
+    try {
+        body = (await request.json()) as HandleUploadBody;
+    } catch {
+        return NextResponse.json({ error: 'Ongeldig verzoek.' }, { status: 400 });
+    }
+
+    try {
+        const jsonResponse = await handleUpload({
+            body,
+            request,
+            onBeforeGenerateToken: async () => ({
+                allowedContentTypes: [...supportedImageTypes],
+                maximumSizeInBytes: MAX_IMAGE_UPLOAD_BYTES,
+                addRandomSuffix: false
+            })
+        });
+
+        return NextResponse.json(jsonResponse);
+    } catch (error) {
+        console.error('Blob-token aanmaken mislukt:', error);
+
+        return NextResponse.json(
+            { error: 'De upload kon niet worden voorbereid. Probeer het opnieuw.' },
+            { status: 502 }
+        );
+    }
 };
 
-const safeName = (file: File) => {
-    const base = file.name.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9._-]/g, '-').slice(0, 60) || 'afbeelding';
-    const suffix = randomUUID().slice(0, 8);
-
-    return `${base}-${suffix}.${extensions[file.type] ?? 'jpg'}`;
-};
-
-export async function POST(request: Request) {
-    if (!(await hasAdminSession())) {
-        return NextResponse.json({ error: 'Niet geautoriseerd.' }, { status: 401 });
+// Zonder Blob-token (lokaal) schrijven we naar public/images/uploads.
+// Vercel heeft een alleen-lezen bestandssysteem, dus daar is dit geen optie.
+const handleLocalFile = async (request: Request) => {
+    if (process.env.VERCEL) {
+        return NextResponse.json(
+            { error: 'Uploads zijn nog niet ingesteld. Koppel een Vercel Blob-store en voeg BLOB_READ_WRITE_TOKEN toe.' },
+            { status: 503 }
+        );
     }
 
     const formData = await request.formData();
@@ -36,40 +72,12 @@ export async function POST(request: Request) {
     }
 
     const uploadError = getUploadError(file);
-    if (uploadError === 'unsupported-type') {
-        return NextResponse.json({ error: 'Gebruik een JPG, PNG of WebP-afbeelding.' }, { status: 400 });
-    }
-    if (uploadError === 'too-large') {
-        return NextResponse.json({ error: 'De afbeelding mag maximaal 4,5 MB zijn.' }, { status: 400 });
-    }
-
-    // Met een Blob-token (productie op Vercel) gaat de foto naar Vercel Blob.
-    if (process.env.BLOB_READ_WRITE_TOKEN) {
-        try {
-            const blob = await put(`admin-images/${safeName(file)}`, file, {
-                access: 'public',
-                addRandomSuffix: false
-            });
-
-            return NextResponse.json({ url: blob.url });
-        } catch (error) {
-            console.error('Blob upload mislukt:', error);
-
-            return NextResponse.json({ error: 'Uploaden naar de opslag mislukte. Probeer het opnieuw.' }, { status: 502 });
-        }
-    }
-
-    // Zonder token (lokaal / zelf gehost) schrijven we naar public/images/uploads.
-    // Vercel heeft een alleen-lezen bestandssysteem, dus daar is dit geen optie.
-    if (process.env.VERCEL) {
-        return NextResponse.json(
-            { error: 'Uploads zijn nog niet ingesteld. Koppel een Vercel Blob-store en voeg BLOB_READ_WRITE_TOKEN toe.' },
-            { status: 503 }
-        );
+    if (uploadError) {
+        return NextResponse.json({ error: uploadErrorMessages[uploadError] }, { status: 400 });
     }
 
     try {
-        const filename = safeName(file);
+        const filename = safeUploadName(file);
         const directory = join(process.cwd(), 'public', 'images', 'uploads');
         await mkdir(directory, { recursive: true });
         await writeFile(join(directory, filename), Buffer.from(await file.arrayBuffer()));
@@ -80,4 +88,16 @@ export async function POST(request: Request) {
 
         return NextResponse.json({ error: 'Opslaan van de afbeelding mislukte. Probeer het opnieuw.' }, { status: 502 });
     }
+};
+
+export async function POST(request: Request) {
+    if (!(await hasAdminSession())) {
+        return NextResponse.json({ error: 'Niet geautoriseerd.' }, { status: 401 });
+    }
+
+    if (request.headers.get('content-type')?.includes('application/json')) {
+        return handleClientToken(request);
+    }
+
+    return handleLocalFile(request);
 }

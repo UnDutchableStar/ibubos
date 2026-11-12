@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from 'react';
 
-import Image from 'next/image';
 import Link from 'next/link';
 
+import ContentImage from '@/components/content/ContentImage';
 import type { ContentRecord, ContentType } from '@/lib/content/types';
 
 import ContentTable from './ContentTable';
@@ -59,7 +59,7 @@ const ContentBrowser = ({ items, type }: { items: ContentRecord[]; type: Content
                 <div className='admin-grid'>
                     {items.map((item) => (
                         <Link key={item.id} href={`/admin/${base}/${item.id}`} className='admin-grid__card'>
-                            <Image
+                            <ContentImage
                                 src={item.image}
                                 alt=''
                                 width={480}

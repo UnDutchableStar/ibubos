@@ -1,7 +1,8 @@
-import Image from 'next/image';
 import Link from 'next/link';
 
 import type { Project } from '@/lib/content';
+
+import ContentImage from './ContentImage';
 
 type ProjectCardProps = {
     project: Project;
@@ -9,7 +10,7 @@ type ProjectCardProps = {
 
 const ProjectCard = ({ project }: ProjectCardProps) => (
     <Link href={`/projecten/${project.slug}`} className='project-card'>
-        <Image
+        <ContentImage
             src={project.image}
             alt={project.title}
             width={2500}

@@ -1,8 +1,9 @@
-import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowUpRight } from 'lucide-react';
 
 import type { BlogPost, Project } from '@/lib/content';
+
+import ContentImage from './ContentImage';
 
 type RelatedBlogsProps = {
     blogs: BlogPost[];
@@ -21,9 +22,8 @@ export const RelatedBlogs = ({ blogs }: RelatedBlogsProps) => (
         <div className='related-list'>
             {blogs.map((post) => (
                 <Link key={post.slug} href={`/blogs/${post.slug}`} className='related-row'>
-                    <Image
+                    <ContentImage
                         src={post.image}
-                        alt=''
                         width={320}
                         height={240}
                         sizes='96px'
@@ -49,9 +49,8 @@ export const RelatedProjects = ({ projects }: RelatedProjectsProps) => (
         <div className='related-list'>
             {projects.map((project) => (
                 <Link key={project.slug} href={`/projecten/${project.slug}`} className='related-row'>
-                    <Image
+                    <ContentImage
                         src={project.image}
-                        alt=''
                         width={320}
                         height={240}
                         sizes='96px'

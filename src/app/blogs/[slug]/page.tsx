@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 
+import ContentImage from '@/components/content/ContentImage';
 import { RelatedBlogs } from '@/components/content/RelatedContent';
 import { getPublishedBlog, getRelatedPublishedBlogs } from '@/lib/content/repository';
 
@@ -25,7 +26,7 @@ export const generateMetadata = async ({ params }: BlogDetailPageProps): Promise
             type: 'article',
             title: post.title,
             description: post.description,
-            images: [post.image]
+            images: post.image ? [post.image] : undefined
         }
     };
 };
@@ -49,7 +50,7 @@ const BlogDetailPage = async ({ params }: BlogDetailPageProps) => {
                         <h1 className='mt-4 text-4xl font-extrabold leading-tight sm:text-7xl'>{post.title}</h1>
                         <p className='mt-5 max-w-2xl text-base leading-7 sm:text-xl sm:leading-8'>{post.intro}</p>
                     </div>
-                    <Image
+                    <ContentImage
                         src={post.image}
                         alt={post.title}
                         width={2500}

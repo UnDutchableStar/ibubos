@@ -129,8 +129,54 @@ test('accepts up to four content sections', () => {
     );
 });
 
+test('accepts a blog without a cover image', () => {
+    const input = {
+        title: 'Blog zonder afbeelding',
+        description: 'Een duidelijke samenvatting voor de nieuwe blog.',
+        label: 'Reflectie',
+        intro: 'Een voldoende lange introductie voor deze nieuwe blog.',
+        sections,
+        tags: ['reflectie'],
+        takeaway: 'Dit is de kern van het verhaal en ruim lang genoeg.'
+    };
+
+    assert.equal(blogInputSchema.safeParse({ ...input, image: '' }).success, true);
+    assert.equal(blogInputSchema.safeParse(input).success, true);
+    assert.equal(normalizeContentInput('blog', { ...input, image: '' }).image, '');
+    assert.equal(imageSchema.safeParse('').success, false);
+});
+
+test('accepts categories and tags up to 40 characters', () => {
+    const forty = 'Categorie met precies veertig karakters!';
+    const tooLong = 'Categorie met precies veertig karakters!!';
+    const input = {
+        title: 'Nieuwe blog',
+        description: 'Een duidelijke samenvatting voor de nieuwe blog.',
+        image: '/images/over%20ibu.webp',
+        label: forty,
+        intro: 'Een voldoende lange introductie voor deze nieuwe blog.',
+        sections,
+        tags: [forty],
+        takeaway: 'Dit is de kern van het verhaal en ruim lang genoeg.'
+    };
+
+    assert.equal(forty.length, 40);
+    assert.equal(tooLong.length, 41);
+    assert.equal(blogInputSchema.safeParse(input).success, true);
+    assert.equal(blogInputSchema.safeParse({ ...input, label: tooLong }).success, false);
+    assert.equal(blogInputSchema.safeParse({ ...input, tags: [tooLong] }).success, false);
+});
+
 test('validates admin image uploads', () => {
-    assert.equal(getUploadError({ type: 'image/webp', size: 1024 }), null);
-    assert.equal(getUploadError({ type: 'image/svg+xml', size: 1024 }), 'unsupported-type');
-    assert.equal(getUploadError({ type: 'image/jpeg', size: 5 * 1024 * 1024 + 1 }), 'too-large');
+    assert.equal(getUploadError({ type: 'image/webp', name: 'foto.webp', size: 1024 }), null);
+    assert.equal(getUploadError({ type: 'image/svg+xml', name: 'icoon.svg', size: 1024 }), 'unsupported-type');
+    assert.equal(getUploadError({ type: 'image/jpeg', name: 'foto.jpg', size: 10 * 1024 * 1024 + 1 }), 'too-large');
+});
+
+test('accepts uploads without a MIME type and flags HEIC', () => {
+    assert.equal(getUploadError({ type: '', name: 'foto.webp', size: 1024 }), null);
+    assert.equal(getUploadError({ type: '', name: 'foto.png', size: 1024 }), null);
+    assert.equal(getUploadError({ type: '', name: 'foto', size: 1024 }), 'unsupported-type');
+    assert.equal(getUploadError({ type: '', name: 'IMG_1234.HEIC', size: 1024 }), 'heic');
+    assert.equal(getUploadError({ type: 'image/heic', name: 'foto.heic', size: 1024 }), 'heic');
 });

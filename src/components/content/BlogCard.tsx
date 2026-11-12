@@ -1,7 +1,8 @@
-import Image from 'next/image';
 import Link from 'next/link';
 
 import type { BlogPost } from '@/lib/content';
+
+import ContentImage from './ContentImage';
 
 type BlogCardProps = {
     post: BlogPost;
@@ -9,7 +10,7 @@ type BlogCardProps = {
 
 const BlogCard = ({ post }: BlogCardProps) => (
     <Link href={`/blogs/${post.slug}`} className='blog-card'>
-        <Image
+        <ContentImage
             src={post.image}
             alt={post.title}
             width={2500}

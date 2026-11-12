@@ -12,6 +12,7 @@ import {
     UsersRound
 } from 'lucide-react';
 
+import ContentImage from '@/components/content/ContentImage';
 import ExpertiseAreas from '@/components/content/ExpertiseAreas';
 import { getFeaturedBlog } from '@/lib/content/repository';
 
@@ -376,7 +377,7 @@ return (
                         </div>
                     </div>
                     <Link href={`/blogs/${featuredBlog.slug}`} className='featured-blog__media'>
-                        <Image
+                        <ContentImage
                             src={featuredBlog.image}
                             alt={featuredBlog.title}
                             width={2500}
